@@ -1,8 +1,11 @@
 <?php
 
+$currentScript = $_SERVER['argv'][0];
+
 $usage = <<<EOF
-Usage: php ./gjslintReport.php inputFile outputFile
+Usage: php $currentScript inputFile outputFile
 Use '-' as the input file if you would like to use stdin instead of it.
+
 EOF;
 
 
