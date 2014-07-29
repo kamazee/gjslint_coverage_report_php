@@ -1,46 +1,61 @@
 <?php
 
+$usage = <<<EOF
+Usage: php ./gjslintReport.php inputFile outputFile
+Use '-' as the input file if you would like to use stdin instead of it.
+EOF;
+
+
+$stderr = fopen('php://stderr', 'w');
+
 if (!isset($_SERVER['argv'][1]) || !isset($_SERVER['argv'][2])) {
-    echo 'Usage:- php gjslintReport.php [inputFile] [outputFile]';
-    die();
+    fwrite($stderr, $usage);
+    exit(1);
 }
 
-$handle = fopen($_SERVER['argv'][1], "r");
+$inputFile = $_SERVER['argv'][1] !== '-' ?: 'php://stdin';
+$outputFile = $_SERVER['argv'][2];
+
+$inputHandle = fopen($inputFile, "r");
+if (!$inputHandle) {
+    fwrite($stderr, 'Error while opening input file');
+    exit(1);
+}
 $errors = array();
-while (!feof($handle)) {
-    $line = fgets($handle);
+while (false !== ($line = fgets($inputHandle))) {
     if (substr($line, 0, 15) == '----- FILE  :  ') {
         $file = trim(str_replace(array('----- FILE  :  ', '-----'), '', $line));
         $errors[$file] = array();
         $key = 0;
-    } else if (substr($line, 0, 5) == 'Line ') {
-        $error = explode(', ', $line);
+    } elseif (substr($line, 0, 5) == 'Line ') {
+        $error = explode(', ', $line, 2);
         $errors[$file][$key] = array();
-        $errors[$file][$key]['line'] = trim(str_replace('Line ', '',
-                        $error[0]));
+        $errors[$file][$key]['line'] = trim(str_replace('Line ', '', $error[0]));
         $errors[$file][$key]['reason'] = trim($error[1]);
         $errors[$file][$key]['severity'] = 'error';
         $key++;
     }
 }
 
-fclose($handle);
-$xml = '<jslint>';
-foreach ($errors as $fileName => $issues) {
+fclose($inputHandle);
 
-    $xml .= '<file name="' . $fileName . '">';
+
+$outputHandle = fopen($outputFile, 'w');
+fwrite($outputHandle, '<jslint>');
+foreach ($errors as $fileName => $issues) {
+    fwrite($outputHandle, '<file name="' . $fileName . '">');
     foreach ($issues as $issue) {
-        $xml .= '<issue line="' . $issue['line'] . '" severity="' .
-                $issue['severity'] . '" reason="' . str_replace('"', "'",
-                        $issue['reason']) . '"/>';
+        fwrite(
+            $outputHandle,
+            sprintf(
+                '<issue line="%d" severity="%s" reason="%s" />',
+                $issue['line'],
+                $issue['severity'],
+                $issue['reason']
+            ));
     }
-    $xml .= '</file>';
+    fwrite($outputHandle, '</file>');
 }
 
-$xml .='</jslint>';
+fwrite($outputHandle, '</jslint>');
 
-$handle = fopen($_SERVER['argv'][2], "w");
-fwrite($handle, $xml);
-
-fclose($handle)
-?>
