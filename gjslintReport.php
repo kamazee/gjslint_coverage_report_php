@@ -1,9 +1,5 @@
 <?php
 
-$ignore = array(
-    'E:0110'
-);
-
 if (!isset($_SERVER['argv'][1]) || !isset($_SERVER['argv'][2])) {
     echo 'Usage:- php gjslintReport.php [inputFile] [outputFile]';
     die();
@@ -19,14 +15,12 @@ while (!feof($handle)) {
         $key = 0;
     } else if (substr($line, 0, 5) == 'Line ') {
         $error = explode(', ', $line);
-        if (!in_array(substr($error[1], 0, 6), $ignore)) {
-            $errors[$file][$key] = array();
-            $errors[$file][$key]['line'] = trim(str_replace('Line ', '',
-                            $error[0]));
-            $errors[$file][$key]['reason'] = trim($error[1]);
-            $errors[$file][$key]['severity'] = 'error';
-            $key++;
-        }
+        $errors[$file][$key] = array();
+        $errors[$file][$key]['line'] = trim(str_replace('Line ', '',
+                        $error[0]));
+        $errors[$file][$key]['reason'] = trim($error[1]);
+        $errors[$file][$key]['severity'] = 'error';
+        $key++;
     }
 }
 
